@@ -166,58 +166,185 @@
         </div>
     </main>
     <script>
-        // 1. Initial Sample Data
-        let defaultBooks = [
-            {
-                title: "The Great Gatsby",
-                author: "F. Scott Fitzgerald",
-                year: 1925,
-                price: 150.00,
-                imageUrl: "https://via.placeholder.com/250x200?text=The+Great+Gatsby",
-                affiliateLink: "https://www.abebooks.com"
-            },
-            {
-                title: "Pride and Prejudice",
-                author: "Jane Austen",
-                year: 1813,
-                price: 200.00,
-                imageUrl: "https://via.placeholder.com/250x200?text=Pride+and+Prejudice",
-                affiliateLink: "https://www.abebooks.com"
-            }
-        ];
+       // 1. المتغيرات الأساسية
+let booksData = [];
+const bookGrid = document.getElementById('book-grid');
+const jsonOutput = document.getElementById('json-output');
 
-        // 2. Load from LocalStorage or use Default
-        let booksData = JSON.parse(localStorage.getItem('auraLegacy_books')) || defaultBooks;
+// 2. دالة جلب البيانات من ملف JSON الخارجي
+async function loadBooks() {
+    try {
+        // "books.json" هو الملف اللي غتحط فيه الكتب ديالك
+        const response = await fetch('books.json');
+        booksData = await response.json();
+        renderBooks(booksData);
+    } catch (error) {
+        console.error("Error loading books:", error);
+        bookGrid.innerHTML = "<p style='text-align:center;'>Check books.json file existence.</p>";
+    }
+}
 
-        const bookGrid = document.getElementById('book-grid');
-        const searchInput = document.getElementById('search');
-        const centuryFilter = document.getElementById('century-filter');
-        const adminBtn = document.getElementById('admin-btn');
-        const adminPanel = document.getElementById('admin-panel');
-        const adminForm = document.getElementById('admin-form');
-        const adminPassword = document.getElementById('admin-password');
-        const jsonOutput = document.getElementById('json-output');
-        const clearBtn = document.getElementById('clear-storage');
+// 3. دالة عرض الكتب في الصفحة
+function renderBooks(books) {
+    bookGrid.innerHTML = '';
+    books.forEach(book => {
+        const card = document.createElement('div');
+        card.className = 'book-card';
+        card.innerHTML = `
+            <img src="${book.imageUrl}" alt="${book.title}" class="book-image">
+            <div class="rare-badge">Rare</div>
+            <h3>${book.title}</h3>
+            <p>by ${book.author}</p>
+            <p>Year: ${book.year} | Price: $${book.price.toFixed(2)}</p>
+            <button class="buy-button" onclick="window.open('${book.affiliateLink}', '_blank')">Buy on AbeBooks</button>
+        `;
+        bookGrid.appendChild(card);
+    });
+}
 
-        function renderBooks(books) {
-            bookGrid.innerHTML = '';
-            books.forEach(book => {
-                const card = document.createElement('div');
-                card.className = 'book-card';
-                card.innerHTML = `
-                    <img src="${book.imageUrl}" alt="${book.title}" class="book-image">
-                    <div class="rare-badge">Rare</div>
-                    <h3>${book.title}</h3>
-                    <p>by ${book.author}</p>
-                    <p>Year: ${book.year}</p>
-                    <p>Price: $${book.price.toFixed(2)}</p>
-                    <button class="buy-button" onclick="window.open('${book.affiliateLink}', '_blank')">Buy on AbeBooks</button>
-                `;
-                bookGrid.appendChild(card);
-            });
-            // Update JSON for easy Copy-Paste
-            jsonOutput.value = JSON.stringify(booksData, null, 2);
+// 4. نظام إضافة كتاب جديد (يعطيك كود الكتاب فقط)
+document.getElementById('admin-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    
+    // تأكد من كلمة المرور
+    if (document.getElementById('admin-password').value !== 'canon_-!LB2107') {
+        alert('Password Incorrect!');
+        return;
+    }
+
+    const newBook = {
+        title: document.getElementById('book-title').value,
+        author: document.getElementById('book-author').value,
+        year: parseInt(document.getElementById('book-year').value),
+        price: parseFloat(document.getElementById('book-price').value),
+        imageUrl: document.getElementById('book-image').value,
+        affiliateLink: document.getElementById('book-link').value
+    };
+
+    // كيعطيك الكود اللي غتلصقو في ملف JSON
+    // كنزيدو الفاصلة (,) في اللخر باش ملي تلصقو يجي ساهل
+    jsonOutput.value = JSON.stringify(newBook, null, 2) + ",";
+    
+    // كيطلع ليك الكتاب في الصفحة غير باش تشوفو (Preview)
+    booksData.unshift(newBook);
+    renderBooks(booksData);
+    
+    alert('Copy the code from the textarea and add it to books.json!');
+});
+
+// 5. تشغيل البحث والفلاتر
+document.getElementById('search').addEventListener('input', (e) => {
+    const term = e.target.value.toLowerCase();
+    const filtered = booksData.filter(b => b.title.toLowerCase().includes(term) || b.author.toLowerCase().includes(term));
+    renderBooks(filtered);
+});
+
+document.getElementById('century-filter').addEventListener('change', (e) => {
+    const century = e.target.value;
+    const filtered = booksData.filter(b => !century || Math.floor(b.year / 100) + 1 == century);
+    renderBooks(filtered);
+});
+
+// إظهار لوحة التحكم
+document.getElementById('admin-btn').addEventListener('click', () => {
+    const panel = document.getElementById('admin-panel');
+    panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
+});
+
+// تحميل الكتب عند فتح الصفحة
+loadBooks();
+        <script>
+    // 1. المتغيرات والبيانات
+    let booksData = []; // البيانات غاتجي من ملف JSON
+    const bookGrid = document.getElementById('book-grid');
+    const searchInput = document.getElementById('search');
+    const centuryFilter = document.getElementById('century-filter');
+    const adminBtn = document.getElementById('admin-btn');
+    const adminPanel = document.getElementById('admin-panel');
+    const adminForm = document.getElementById('admin-form');
+    const jsonOutput = document.getElementById('json-output');
+
+    // 2. تحميل البيانات من الملف الخارجي
+    async function loadBooks() {
+        try {
+            const response = await fetch('books.json');
+            if (!response.ok) throw new Error("File books.json not found");
+            booksData = await response.json();
+            renderBooks(booksData);
+        } catch (error) {
+            console.error("خطأ:", error);
+            bookGrid.innerHTML = "<p style='color:#d4af37;'>Error: Please make sure 'books.json' exists.</p>";
         }
+    }
+
+    // 3. عرض الكتب
+    function renderBooks(books) {
+        bookGrid.innerHTML = '';
+        books.forEach(book => {
+            const card = document.createElement('div');
+            card.className = 'book-card';
+            card.innerHTML = `
+                <img src="${book.imageUrl}" alt="${book.title}" class="book-image">
+                <div class="rare-badge">Rare</div>
+                <h3>${book.title}</h3>
+                <p>by ${book.author}</p>
+                <p>Year: ${book.year} | Price: $${book.price.toFixed(2)}</p>
+                <button class="buy-button" onclick="window.open('${book.affiliateLink}', '_blank')">Buy on AbeBooks</button>
+            `;
+            bookGrid.appendChild(card);
+        });
+    }
+
+    // 4. الفلاتر (البحث)
+    function filterBooks() {
+        const searchTerm = searchInput.value.toLowerCase();
+        const century = centuryFilter.value;
+        let filtered = booksData.filter(book => {
+            const matchesSearch = book.title.toLowerCase().includes(searchTerm) || book.author.toLowerCase().includes(searchTerm);
+            const matchesCentury = !century || Math.floor(book.year / 100) + 1 == century;
+            return matchesSearch && matchesCentury;
+        });
+        renderBooks(filtered);
+    }
+
+    searchInput.addEventListener('input', filterBooks);
+    centuryFilter.addEventListener('change', filterBooks);
+
+    // 5. نظام الـ Admin (إضافة كتاب جديد)
+    adminBtn.addEventListener('click', () => {
+        adminPanel.style.display = adminPanel.style.display === 'block' ? 'none' : 'block';
+    });
+
+    adminForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        if (document.getElementById('admin-password').value !== 'canon_-!LB2107') {
+            alert('Incorrect password');
+            return;
+        }
+
+        const newBook = {
+            title: document.getElementById('book-title').value,
+            author: document.getElementById('book-author').value,
+            year: parseInt(document.getElementById('book-year').value),
+            price: parseFloat(document.getElementById('book-price').value),
+            imageUrl: document.getElementById('book-image').value,
+            affiliateLink: document.getElementById('book-link').value
+        };
+
+        // دابا كيعطيك كود الكتاب الجديد بوحدو مع فاصلة
+        jsonOutput.value = JSON.stringify(newBook, null, 2) + ",";
+        
+        // كنزيدوه في القائمة مؤقتاً باش تشوفو
+        booksData.unshift(newBook);
+        renderBooks(booksData);
+        
+        adminForm.reset();
+        alert('تم توليد كود الكتاب! نسخه من المربع الأسود وحطه في ملف books.json');
+    });
+
+    // تشغيل الصفحة
+    loadBooks();
+</script>
 
         function filterBooks() {
             const searchTerm = searchInput.value.toLowerCase();
